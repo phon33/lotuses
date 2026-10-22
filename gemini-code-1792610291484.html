@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flower Wither Practice Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0e6f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 30px 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    h1 {
+      color: #4a2c5a;
+      margin-bottom: 5px;
+    }
+
+    p.subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    .word-box {
+      background: #faf4fb;
+      border: 2px dashed #d1b3db;
+      border-radius: 12px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 25px;
+      min-height: 120px;
+      justify-content: center;
+    }
+
+    .flower-word {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
+    }
+
+    .input-container {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    input[type="text"] {
+      padding: 12px 16px;
+      font-size: 18px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      width: 200px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    input[type="text"]:focus {
+      border-color: #8e44ad;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      background-color: #8e44ad;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #732d91;
+    }
+
+    .score-board {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-top: 10px;
+    }
+
+    .feedback {
+      height: 24px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .feedback.correct { color: #27ae60; }
+    .feedback.wrong { color: #e74c3c; }
+
+    .flower-list {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Wither Practice</h1>
+    <p class="subtitle">Find the missing flower (neither named nor colored)! First to 5 wins.</p>
+
+    <div class="word-box" id="wordBox">
+      <!-- Generated flower words will go here -->
+    </div>
+
+    <form id="guessForm" onsubmit="handleGuess(event)">
+      <div class="input-container">
+        <input type="text" id="guessInput" placeholder="Type flower name..." autocomplete="off" autofocus />
+        <button type="submit">Submit</button>
+      </div>
+    </form>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="score-board">
+      Score: <span id="score">0</span> / 5
+    </div>
+
+    <div class="flower-list">
+      <strong>Available Flowers:</strong><br>
+      Lotus | Iris | Cosmos | Rose | Tulip | Poppy | Jasmine
+    </div>
+  </div>
+
+  <script>
+    // Flower definitions matched to image colors
+    const FLOWERS = [
+      { name: "LOTUS",   color: "#F3A2B5" }, // Pink
+      { name: "IRIS",    color: "#1E62FF" }, // Blue
+      { name: "COSMOS",  color: "#5E2B78" }, // Purple
+      { name: "ROSE",    color: "#9E0B2B" }, // Red
+      { name: "TULIP",   color: "#E5C800" }, // Yellow
+      { name: "POPPY",   color: "#C65100" }, // Orange
+      { name: "JASMINE", color: "#007B4B" }  // Green
+    ];
+
+    let currentMissing = "";
+    let score = 0;
+
+    function shuffle(array) {
+      return array.slice().sort(() => Math.random() - 0.5);
+    }
+
+    function generateRound() {
+      // Clear input and focus
+      const input = document.getElementById('guessInput');
+      input.value = '';
+      input.focus();
+
+      // 1. Pick 1 missing flower out of 7
+      const shuffled = shuffle(FLOWERS);
+      const missingFlower = shuffled[0];
+      currentMissing = missingFlower.name;
+
+      // Remaining 6 flowers
+      const remaining = shuffled.slice(1);
+
+      // 2. Select 3 flowers to use for Text Names
+      const textFlowers = remaining.slice(0, 3);
+
+      // 3. Select 3 different flowers (from remaining 6) to use for Text Colors
+      // Ensure no text flower gets its own color to make it authentic to the challenge
+      let colorFlowers = remaining.slice(3, 6);
+
+      // Display the 3 words
+      const wordBox = document.getElementById('wordBox');
+      wordBox.innerHTML = '';
+
+      for (let i = 0; i < 3; i++) {
+        const div = document.createElement('div');
+        div.className = 'flower-word';
+        div.textContent = textFlowers[i].name;
+        div.style.color = colorFlowers[i].color;
+        wordBox.appendChild(div);
+      }
+    }
+
+    function handleGuess(event) {
+      event.preventDefault();
+      const input = document.getElementById('guessInput');
+      const userGuess = input.value.trim().toUpperCase();
+      const feedback = document.getElementById('feedback');
+
+      if (!userGuess) return;
+
+      if (userGuess === currentMissing) {
+        score++;
+        document.getElementById('score').textContent = score;
+        feedback.className = 'feedback correct';
+        feedback.textContent = 'Correct!';
+
+        if (score >= 5) {
+          alert('Congratulations! You reached 5 points and won the matchup!');
+          score = 0;
+          document.getElementById('score').textContent = score;
+        }
+
+        setTimeout(() => {
+          feedback.textContent = '';
+          generateRound();
+        }, 800);
+      } else {
+        feedback.className = 'feedback wrong';
+        feedback.textContent = `Incorrect! (Target was ${currentMissing})`;
+        setTimeout(() => {
+          feedback.textContent = '';
+          generateRound();
+        }, 1200);
+      }
+    }
+
+    // Start first round on load
+    generateRound();
+  </script>
+</body>
+</html>
